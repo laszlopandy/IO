@@ -1,6 +1,6 @@
 #!/bin/sh
 
-set -e
+set -ev
 
 cd "$(dirname "$0")"
 
@@ -29,6 +29,9 @@ cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
 proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
 EOF`
 RESULT=`echo "$INPUT" | node build/test4.js`
-test "$INPUT" = "$RESULT"
+if [ ! "$INPUT" = "$RESULT" ]; then
+    echo "Unexpected output: $RESULT"
+    exit 1
+fi
 
 echo "Success"
