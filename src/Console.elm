@@ -1,6 +1,6 @@
 module Console (putChar, putStr, putStrLn, getChar, getLine, readUntil, writeFile,
            exit, map, mapIO, forEach, pure, apply, (<*>), andThen, (>>=),
-           seq, (>>>), forever, IO, run) where
+           seq, (>>>), forever, IO, run, getContents) where
 
 {-|
 
@@ -17,7 +17,7 @@ how to run such a computation.
 @docs putChar, putStr, putStrLn
 
 # Stdin
-@docs getChar, getLine, readUntil
+@docs getChar, getLine, getContents, readUntil
 
 # File Operations
 @docs writeFile
@@ -61,15 +61,19 @@ readUntil = Core.readUntil
 
 {-| Write content to a file -}
 writeFile : { file : String, content : String } -> Core.IO ()
-writeFile = Core.writeFile 
+writeFile = Core.writeFile
 
 {-| Read a line from stdin -}
 getLine : Core.IO String
 getLine = Core.getLine
 
+{-| Read from stdin until EOF -}
+getContents : Core.IO String
+getContents = Core.getContents
+
 {-| Apply a pure function to an IO value -}
 map : (a -> b) -> Core.IO a -> Core.IO b
-map = Core.map 
+map = Core.map
 
 {-| Alternative interface to forEach  -}
 mapIO : (a -> Core.IO ()) -> List a -> Core.IO ()
@@ -77,7 +81,7 @@ mapIO = Core.mapIO
 
 {-| Run an IO computation for each element of a list -}
 forEach : List a -> (a -> Core.IO ()) -> Core.IO ()
-forEach = Core.forEach 
+forEach = Core.forEach
 
 {-| Use a pure value where an IO computation is expected. -}
 pure : a -> Core.IO a

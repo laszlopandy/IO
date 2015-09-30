@@ -9,6 +9,9 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     return localRuntime.Native.Console.NativeCom.values;
     }
 
+    /* Module imports */
+    var NT = Elm.Console.NativeTypes.make(localRuntime);
+
     /* Elm imports */
     var List = Elm.Native.List.make(localRuntime);
     var Maybe = Elm.Maybe.make(localRuntime);
@@ -21,20 +24,31 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     var stdin = process.stdin;
 
     var sendResponseString = function(str) {
-        var value = Maybe.Nothing;
+        var value = NT.Empty;
         if (str !== null && str.length > 0) {
-            value = Maybe.Just(str);
+            value = NT.Data(str);
         }
+        sendResponse(value);
+    };
+
+    var sendResponse = function(value) {
         setTimeout(function() {
             localRuntime.notify(responsesSignal.id, value);
         }, 0);
-    }
+    };
 
-    var responsesSignal = NS.input('Console.NativeCom.responses', Maybe.Nothing);
+    var responsesSignal = NS.input(
+        'Console.NativeCom.responses', Maybe.Nothing);
+
     stdin.on('data', function(chunk) {
         stdin.pause();
         sendResponseString(chunk.toString());
-    })
+    });
+
+    var eof = false;
+    stdin.on('end', function() {
+        eof = true;
+    });
 
     var sendRequestBatch = function(list) {
         var requests = List.toArray(list);
@@ -63,6 +77,10 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
                 process.stdout.write(request._0);
                 break;
             case 'Get':
+                // shared state
+                if (eof) {
+                    sendResponse(NT.EOF);
+                }
                 stdin.resume();
                 break;
             case 'Exit':

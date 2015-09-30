@@ -2,15 +2,10 @@ module Console.NativeCom where
 
 import Task exposing (Task)
 
+import Console.NativeTypes exposing (IResponse, IRequest)
+
 import Native.Console.NativeCom
 
-type IRequest = Put String
-              | Exit Int
-              | Get
-              | WriteFile { file : String, content : String }
-              | Init
-
-type alias IResponse = Maybe String
 
 sendRequests : Signal (List IRequest) -> Signal (Task x ())
 sendRequests requests =
