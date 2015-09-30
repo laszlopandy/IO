@@ -15,32 +15,32 @@ import Trampoline
 import Console.Core as Core
 import Console.Core exposing (IO(..), IOF(..))
 import Console.NativeCom as NativeCom
-import Console.NativeCom as NC
-import Console.NativeCom exposing (IRequest, IResponse)
+import Console.NativeTypes as NT
+import Console.NativeTypes exposing (IRequest, IResponse)
 
-type alias IOState  = { buffer : String }
+type alias IOState  = { buffer : String, eof : Bool }
 
 start : IOState
-start = { buffer = "" }
+start = { buffer = "", eof = False }
 
 run : IO () -> Signal (Task x ())
 run io =
-  let init               = (\_ -> io, start, [NC.Init])
+  let init               = (\_ -> io, start, [NT.Init])
       f resp (io, st, _) = step resp io st
       third (_, _, z)    = z
   in NativeCom.sendRequests (third <~ foldp f init NativeCom.responses)
 
 putS : String -> IRequest
-putS = NC.Put
+putS = NT.Put
 
 exit : Int -> IRequest
-exit = NC.Exit
+exit = NT.Exit
 
 getS : IRequest
-getS = NC.Get
+getS = NT.Get
 
 writeF : { file : String, content : String } -> IRequest
-writeF = NC.WriteFile
+writeF = NT.WriteFile
 
 -- | Extract all of the requests that can be run now
 extractRequests : IO a -> State IOState (List IRequest, () -> IO a)
@@ -53,11 +53,14 @@ extractRequests io =
       Exit n       -> pure ([exit n], \_ -> io)
       GetC k       ->
         get >>= \st ->
-        case String.uncons st.buffer of
-          Nothing -> pure ([getS], \_ -> io)
-          Just (c, rest) ->
-            put ({ buffer = rest }) >>= \_ ->
-            extractRequests (k c)
+            case String.uncons st.buffer of
+              Nothing ->
+                if st.eof
+                  then put st >>= \_ -> extractRequests (k '\0')
+                  else pure ([getS], \_ -> io)
+              Just (c, rest) ->
+                put { st | buffer <- rest } >>= \_ ->
+                extractRequests (k c)
 
 flattenReqs : List IRequest -> List IRequest
 flattenReqs rs =
@@ -70,8 +73,8 @@ flattenReqs rs =
         [r] -> loop [] (r::acc) (n+1)
         r1 :: r2 :: rs' ->
         case (r1, r2) of
-          (NC.Exit n, _)      -> loop [] (r1::acc) (n+1)
-          (NC.Put s1, NC.Put s2) -> loop (putS (s1++s2) :: rs') acc (n+1)
+          (NT.Exit n, _)      -> loop [] (r1::acc) (n+1)
+          (NT.Put s1, NT.Put s2) -> loop (putS (s1++s2) :: rs') acc (n+1)
           _                -> loop (r2::rs') (r1::acc) (n+1)
     in Trampoline.trampoline <| loop rs [] 0
 
@@ -82,8 +85,9 @@ step : IResponse ->
        (() -> IO a, IOState, List IRequest)
 step resp io st =
   let newST = case resp of
-        Nothing -> st
-        Just s  -> { st | buffer <- String.append st.buffer s }
+        NT.Empty   -> st
+        NT.EOF     -> { st | eof <- True }
+        NT.Data s  -> { st | buffer <- String.append st.buffer s }
       (newST', (rs, k)) = extractRequests (io ()) newST
   in (k, newST', rs)
 

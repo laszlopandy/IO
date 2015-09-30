@@ -39,6 +39,11 @@ writeFile obj = Impure (WriteF obj (\_ -> Pure ()))
 getLine : IO String
 getLine = readUntil '\n'
 
+
+{-| Read all stdin into a single string. -}
+getContents : IO String
+getContents = readUntil '\0'
+
 -- | IO Combinators
 
 {-| Apply a pure function to an IO value -}
