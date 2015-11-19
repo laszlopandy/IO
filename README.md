@@ -39,7 +39,7 @@ port runner = Console.run hello
 
 link in some javascript and then run:
 ```
-$ elm-make --yes test/Test.elm raw-test.js
+$ elm-make --yes test/Test.elm --output raw-test.js
 ...
 $ ./elm-io.sh raw-test.js test.js
 $ node test.js
