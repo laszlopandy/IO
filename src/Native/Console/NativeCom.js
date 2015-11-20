@@ -17,8 +17,13 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     var Utils = Elm.Native.Utils.make(localRuntime);
 
     /* Node.js imports */
-    var fs = require('fs');
-    var stdin = process.stdin;
+    try {
+        var fs = require('fs');
+        var stdin = process.stdin;
+        var in_node = true;
+    } catch (reference_error) {
+        var in_node = false;
+    }
 
     var sendResponseString = function(str) {
         var value = Maybe.Nothing;
@@ -31,10 +36,13 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     }
 
     var responsesSignal = NS.input('Console.NativeCom.responses', Maybe.Nothing);
-    stdin.on('data', function(chunk) {
-        stdin.pause();
-        sendResponseString(chunk.toString());
-    })
+    
+    if (in_node) {
+        stdin.on('data', function(chunk) {
+            stdin.pause();
+            sendResponseString(chunk.toString());
+        })
+    }
 
     var sendRequestBatch = function(list) {
         var requests = List.toArray(list);
@@ -58,23 +66,25 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     }
 
     var doRequest = function(request) {
-        switch(request.ctor) {
-            case 'Put':
-                process.stdout.write(request._0);
-                break;
-            case 'Get':
-                stdin.resume();
-                break;
-            case 'Exit':
-                process.exit(request._0);
-                break;
-            case 'WriteFile':
-                fs.writeFileSync(request._0.file, request._0.content);
-                break;
-            case 'Init':
-                // trigger the initial IO requests
-                sendResponseString(null);
-                break;
+        if (in_node) {
+            switch(request.ctor) {
+                case 'Put':
+                    process.stdout.write(request._0);
+                    break;
+                case 'Get':
+                    stdin.resume();
+                    break;
+                case 'Exit':
+                    process.exit(request._0);
+                    break;
+                case 'WriteFile':
+                    fs.writeFileSync(request._0.file, request._0.content);
+                    break;
+                case 'Init':
+                    // trigger the initial IO requests
+                    sendResponseString(null);
+                    break;
+            }
         }
     }
 
