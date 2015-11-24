@@ -20,9 +20,9 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     try {
         var fs = require('fs');
         var stdin = process.stdin;
-        var in_node = true;
+        var inNode = true;
     } catch (reference_error) {
-        var in_node = false;
+        var inNode = false;
     }
 
     var sendResponseString = function(str) {
@@ -37,7 +37,7 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
 
     var responsesSignal = NS.input('Console.NativeCom.responses', Maybe.Nothing);
     
-    if (in_node) {
+    if (inNode) {
         stdin.on('data', function(chunk) {
             stdin.pause();
             sendResponseString(chunk.toString());
@@ -66,7 +66,7 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     }
 
     var doRequest = function(request) {
-        if (in_node) {
+        if (inNode) {
             switch(request.ctor) {
                 case 'Put':
                     process.stdout.write(request._0);
