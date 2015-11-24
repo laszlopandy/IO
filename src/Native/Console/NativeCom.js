@@ -17,12 +17,11 @@ Elm.Native.Console.NativeCom.make = function(localRuntime) {
     var Utils = Elm.Native.Utils.make(localRuntime);
 
     /* Node.js imports */
-    try {
+    var inNode = typeof module !== 'undefined' && module.exports;
+    
+    if (inNode) {
         var fs = require('fs');
         var stdin = process.stdin;
-        var inNode = true;
-    } catch (reference_error) {
-        var inNode = false;
     }
 
     var sendResponseString = function(str) {
